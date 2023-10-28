@@ -5,20 +5,20 @@ Description: >
 
   Sample SAM Template for ff-sam
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 3
     MemorySize: 128
-
     Tracing: Active
   Api:
     TracingEnabled: true
+
 Resources:
   MyS3Bucket:
     Type: AWS::S3::Bucket
+
   CreateFlagFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: flags/
       Handler: app.lambda_handler
@@ -27,7 +27,7 @@ Resources:
         - x86_64
       Events:
         Flags:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /flags
             Method: get
@@ -42,6 +42,27 @@ Resources:
         Variables:
           FLAGS_BUCKET: !Ref MyS3Bucket
 
+  ListFlagsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: flags/
+      Handler: list_flags.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Events:
+        FlagsList:
+          Type: Api
+          Properties:
+            Path: /flags/list
+            Method: get
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref MyS3Bucket
+      Environment:
+        Variables:
+          FLAGS_BUCKET: !Ref MyS3Bucket
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -49,19 +70,31 @@ Resources:
         Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
+
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: "true"
+
 Outputs:
   createFlagApi:
     Description: API Gateway endpoint URL for Prod stage for creating flags
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/flags/"
+
+  listFlagsApi:
+    Description: API Gateway endpoint URL for Prod stage for listing flags
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/flags/list"
+
   CreateFlagFunction:
     Description: Create Flag Function ARN
     Value: !GetAtt CreateFlagFunction.Arn
+
+  ListFlagsFunction:
+    Description: List Flags Function ARN
+    Value: !GetAtt ListFlagsFunction.Arn
+
   CreateFlagFunctionIamRole:
     Description: Implicit IAM Role created for create flag function
     Value: !GetAtt CreateFlagFunctionRole.Arn

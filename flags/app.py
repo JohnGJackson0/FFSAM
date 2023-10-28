@@ -19,24 +19,17 @@ def object_exists(bucket, key):
             raise
 
 def lambda_handler(event, context):
-    # Extract the 'name' from the API event
     name = event.get('queryStringParameters', {}).get('name', 'defaultName')
-
-    # Check if the object with the name already exists
     if object_exists(FLAGS_BUCKET, f'{name}.txt'):
         return {
-            'statusCode': 409, # 409 Conflict
+            'statusCode': 409,
             'body': json.dumps({'message': f'File {name}.txt already exists in S3. Please modify the existing file or choose a different name to avoid naming conflicts.'})
         }
-
-    # Create an S3 object with the name
     s3.put_object(
         Bucket=FLAGS_BUCKET,
         Key=f'{name}.txt',
-        Body=json.dumps({'message': f'File created for {name}'})
+        Body=json.dumps({'flag': False})
     )
-
-    # Response for API Gateway
     return {
         'statusCode': 200,
         'body': json.dumps({'message': f'Successfully created file for {name} in S3.'})
