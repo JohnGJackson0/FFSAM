@@ -15,6 +15,8 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
   CreateFlagFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -29,6 +31,16 @@ Resources:
           Properties:
             Path: /flags
             Method: get
+            RequestParameters:
+              method.request.querystring.name:
+                Required: true
+                Caching: false
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref MyS3Bucket
+      Environment:
+        Variables:
+          FLAGS_BUCKET: !Ref MyS3Bucket
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
